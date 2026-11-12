@@ -1,0 +1,5 @@
+#version 330 core
+in vec3 FragPos;in vec3 Normal;in vec2 UV;in vec4 FragPosLight;out vec4 FragColor;
+uniform vec3 lightPos,viewPos,lightColor,objectColor;uniform sampler2D diffuseTexture,shadowMap;uniform int useBlinnPhong,useTexture,useShadow;uniform float shininess;
+float shadowCalc(vec3 n,vec3 l){vec3 p=FragPosLight.xyz/FragPosLight.w;p=p*0.5+0.5;if(p.z>1.0)return 0.0;float bias=max(0.003*(1.0-dot(n,l)),0.0007);vec2 texel=1.0/textureSize(shadowMap,0);float sh=0.0;for(int x=-1;x<=1;x++)for(int y=-1;y<=1;y++){float d=texture(shadowMap,p.xy+vec2(x,y)*texel).r;sh+=p.z-bias>d?1.0:0.0;}return sh/9.0;}
+void main(){vec3 n=normalize(Normal),l=normalize(lightPos-FragPos),v=normalize(viewPos-FragPos);float diff=max(dot(n,l),0.0);float spec=0.0;if(useBlinnPhong==1){vec3 h=normalize(l+v);spec=pow(max(dot(n,h),0.0),shininess);}else{vec3 r=reflect(-l,n);spec=pow(max(dot(v,r),0.0),shininess);}float sh=useShadow==1?shadowCalc(n,l):0.0;vec3 base=useTexture==1?texture(diffuseTexture,UV).rgb:objectColor;vec3 ambient=.22*lightColor;vec3 diffuse=diff*lightColor;vec3 specular=.45*spec*lightColor;vec3 result=ambient+(1.0-sh)*(diffuse*base+specular);FragColor=vec4(result,1.0);}
